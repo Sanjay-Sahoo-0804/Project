@@ -1,10 +1,7 @@
-// if(process.env.NODE_ENV != "production"){
-//   require('dotenv').config();
-// }
+
 require('dotenv').config();
 const cloudinary = require('cloudinary').v2;
 
-// 🔐 Cloudinary config using environment variables
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUD_API_KEY,
@@ -19,6 +16,7 @@ const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
 const ExpressError = require("./utils/ExpressError.js");
 const session = require("express-session");
+const MongoStore = require('connect-mongo');
 const flash = require("connect-flash");
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
@@ -30,7 +28,6 @@ const listingsRouter = require("./routes/listing.js");
 const reviewsRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
 
-// const MONGO_URL = "mongodb://127.0.0.1:27017/wanderlust";
 const dbUrl = process.env.ATLASDB_URL;
 
 
@@ -49,20 +46,35 @@ app.use(methodOverride("_method"));
 app.engine('ejs',ejsMate);
 app.use(express.static(path.join(__dirname,"public")));
 
+
+
+
+const store = MongoStore.create({
+  mongoUrl: dbUrl,
+  crypto: {
+    secret: process.env.SESSION_SECRET || "mysupersecretstring",
+  },
+  collectionName: 'sessions',
+  touchAfter: 24 * 3600 
+});
+
+store.on("error",()=>{
+  console.log("ERROR IN MONGO SESSION STORE",err);
+});
+
+
 const sessionOptions = {
-  secret:"mysupersecretstring",
-  resave:false,
-  saveUninitialized:true,
-  cookie:{
+  store,
+  secret: process.env.SESSION_SECRET || "mysupersecretstring",
+  resave: false,
+  saveUninitialized: true,
+  cookie: {
     expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
-  },
+    secure: process.env.NODE_ENV === "production"
+  }
 };
-
-// app.get("/",(req,res)=>{
-//     res.send("Hi I am Sanjay!");
-// });
 
 app.use(session(sessionOptions));
 app.use(flash());
@@ -78,8 +90,6 @@ app.use((req,res,next)=>{
   res.locals.currentUser = req.user; 
   res.locals.success = req.flash("success");
   res.locals.error = req.flash("error");
-
-  // console.log("➡️ Middleware sees user:", req.user);
   next();
 });
 
@@ -91,20 +101,14 @@ app.get("/random", (req, res) => {
   res.send("Here’s something random for you!");
 });
 
-// app.all("/*", (req, res, next) => {
-//   next(new ExpressError(404, "page not found"));
-// });
+
 
 app.use((err, req, res, next) => {
-  console.error("💥 ERROR STACK:", err.stack);  // This logs full error details
+  console.error("💥 ERROR STACK:", err.stack); 
   const { statusCode = 500 } = err;
   const message = err.message || "Something went wrong";
   res.status(statusCode).render("error.ejs", { err });
 });
-
-
-
-
 
 app.listen(8080,()=>{
     console.log("app is working");
