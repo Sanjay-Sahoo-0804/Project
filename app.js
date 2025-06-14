@@ -97,8 +97,8 @@ app.use("/listings",listingsRouter);
 app.use("/listings/:id/reviews",reviewsRouter);
 app.use("/",userRouter);
 
-app.get("/random", (req, res) => {
-  res.send("Here’s something random for you!");
+app.get("/", (req, res) => {
+  res.send("Welcome to the Airbnb Clone Server!");
 });
 
 
