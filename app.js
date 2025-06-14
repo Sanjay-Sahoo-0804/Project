@@ -98,8 +98,9 @@ app.use("/listings/:id/reviews",reviewsRouter);
 app.use("/",userRouter);
 
 app.get("/", (req, res) => {
-  res.send("Welcome to the Airbnb Clone Server!");
+  res.redirect("/listings");
 });
+
 
 
 
