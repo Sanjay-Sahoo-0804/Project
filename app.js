@@ -107,11 +107,14 @@ app.get("/", (req, res) => {
 
 
 app.use((err, req, res, next) => {
+  if (res.headersSent) {
+    return next(err);
+  }
   console.error("💥 ERROR STACK:", err.stack); 
   const { statusCode = 500 } = err;
-  const message = err.message || "Something went wrong";
   res.status(statusCode).render("error.ejs", { err });
 });
+
 
 app.listen(8080,()=>{
     console.log("app is working");
